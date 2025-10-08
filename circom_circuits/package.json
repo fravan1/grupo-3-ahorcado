@@ -1,0 +1,15 @@
+{
+    "name": "circom-circuits",
+    "type": "module",
+    "devDependencies": {
+        "@solose-ts/vitest-circom": "0.1.2-beta.0",
+        "@types/node": "^24.7.0",
+        "dedent": "^1.7.0",
+        "typescript": "^5.9.3",
+        "vitest": "^3.2.4"
+    },
+    "dependencies": {
+        "circomlib": "^2.0.5",
+        "snarkjs": "^0.7.5"
+    }
+}
