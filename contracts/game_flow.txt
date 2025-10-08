@@ -1,0 +1,64 @@
+Phase 1:
+1. Player 1: createGame(wordCommitment1, wordLength1)
+   → Creates game with their secret word for Player 2 to guess
+   → Game status: WAITING_FOR_PLAYER
+
+2. Player 2: joinGame(gameId, wordCommitment2, wordLength2)
+   → Joins game and submits their secret word for Player 1 to guess
+   → Game status: ACTIVE
+   → Both players now have words to guess
+
+Player 1                          Contract                         Player 2
+   |                                 |                                |
+   |-- createGame(hash1, len1) ----> |                                |
+   |                                 |-- GameCreated event ---------> |
+   |                                 |                                |
+   |                                 |<-- joinGame(hash2, len2) ------|
+   |<-- GameStarted event -----------|                                |
+
+Phase 2:
+Round N:
+1. Player 1: submitGuess(gameId, 'A') 
+   → Guesses a letter for Player 2's word
+   
+2. Player 2: submitGuess(gameId, 'E')
+   → Guesses a letter for Player 1's word
+   
+3. Player 2: submitProof(gameId, proofForPlayer1Guess, positions, isCorrect)
+   → Proves whether Player 1's guess 'A' was in Player 2's word
+   
+4. Player 1: submitProof(gameId, proofForPlayer2Guess, positions, isCorrect)
+   → Proves whether Player 2's guess 'E' was in Player 1's word
+   
+5. Contract updates both game states
+   → Both players' revealed letters update
+   → Wrong guess counters update
+   → Check win conditions
+
+Player 1                          Contract                         Player 2
+   |                                 |                                |
+   |-- submitGuess('A') -----------> |                                |
+   |                                 |-- GuessSubmitted event ------->|
+   |                                 |                                |
+   |                                 |<-- submitGuess('E') -----------|
+   |<-- GuessSubmitted event --------|                                |
+   |                                 |                                |
+   | (Generate proof off-chain       |      Generate proof off-chain) |
+   | for Player 2's guess 'E')       |      (for Player 1's guess 'A')|
+   |                                 |                                |
+   |-- submitProof(proofE, ...) ---> |                                |
+   |                                 |-- ProofVerified event -------->|
+   |                                 |                                |
+   |                                 |<-- submitProof(proofA, ...) ---|
+   |<-- ProofVerified event ---------|                                |
+   |                                 |                                |
+   |                                 |-- Check win conditions         |
+   |                                 |                                |
+
+Win Conditions
+
+1: One player completes the word
+2: One player reaches max wrong guesses
+3: Both complete simultaneously (same round)
+    Draw (or whoever had fewer wrong guesses wins)
+4: Timeout:If a player doesn't submit proof within timeout??
