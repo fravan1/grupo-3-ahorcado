@@ -47,19 +47,19 @@ contract Hangman is Ownable {
      * @param _wordLength Length of the secret word
      */
     function createGame(bytes32 _wordCommitment, uint8 _wordLength) external {
-        if (_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+        if (_wordCommitment == 0
+          || _wordLength > MAX_WORD_LEN
+          || _wordLength == 0) revert InvalidWordLenght();
 
         uint256 gameId = gameCounter++;
         Game storage game = games[gameId];
 
-        game.player1 = msg.sender;
         game.status = GameStatus.WAITING_FOR_PLAYER;
         game.createdAt = block.timestamp;
 
+        game.player1 = msg.sender;
         game.player1State.wordCommitment = _wordCommitment;
         game.player1State.wordLength = _wordLength;
-        game.player1State.remainingAttempts = DEFAULT_ATTEMPTS;
-        game.player1State.revealedLetters = new bytes1[](_wordLength);
         game.player1State.lastActionTime = block.timestamp;
 
         emit GameCreated(gameId, msg.sender, _wordLength);
@@ -77,16 +77,22 @@ contract Hangman is Ownable {
         if (game.player1 == address(0)) revert GameNotFound();
         if (game.status != GameStatus.WAITING_FOR_PLAYER) revert GameAlreadyStarted();
         if (msg.sender == game.player1) revert InvalidPlayer();
-        if (_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+        if (_wordCommitment == 0
+          || _wordLength > MAX_WORD_LEN
+          || _wordLength == 0) revert InvalidWordLenght();
 
-        game.player2 = msg.sender;
         game.status = GameStatus.ACTIVE;
 
+        game.player2 = msg.sender;
         game.player2State.wordCommitment = _wordCommitment;
         game.player2State.wordLength = _wordLength;
-        game.player2State.remainingAttempts = DEFAULT_ATTEMPTS;
-        game.player2State.revealedLetters = new bytes1[](_wordLength);
         game.player2State.lastActionTime = block.timestamp;
+
+        game.player1State.remainingAttempts = DEFAULT_ATTEMPTS;
+        game.player2State.remainingAttempts = DEFAULT_ATTEMPTS;
+
+        game.player1State.revealedLetters = new bytes1[](game.player2State.wordLength);
+        game.player2State.revealedLetters = new bytes1[](game.player1State.wordLength);
 
         emit GameStarted(_gameId, game.player1, msg.sender);
     }
@@ -111,10 +117,13 @@ contract Hangman is Ownable {
 
         if (myState.remainingAttempts == 0) revert DeadPlayer();
 
-        // Check if letter already guessed
-        uint8 letterIndex = uint8(_letter) - 97; // 'a' = 97
-        if (letterIndex > 25) revert InvalidInput(); // Only a-z allowed
+        // Validate letter
+        uint8 letterIndex = uint8(_letter);
+        if (letterIndex < 97 || 122 < letterIndex)
+            revert InvalidInput(); // Only a-z allowed
+        letterIndex -= 97; // 'a' = 97
 
+        // Check if letter already guessed
         uint32 mask = uint32(1) << letterIndex;
         if (myState.guessedLetters & mask != 0) revert GuessRepeated();
 
@@ -157,6 +166,10 @@ contract Hangman is Ownable {
             : game.player2State;
 
         if (opponentState.currentGuess == 0) revert NoGuessInCourse();
+
+        uint256 lastPosition = 0;
+        for (uint256 i = myState.wordLength; i < _letterPositions.length; i++)
+            if (_letterPositions[i] != 0) revert InvalidInput();
 
         bytes32[] memory publicInputs = new bytes32[](2 + MAX_WORD_LEN);
         publicInputs[0] = myState.wordCommitment;
