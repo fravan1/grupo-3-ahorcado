@@ -6,19 +6,14 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
   optimizeDeps: {
     esbuildOptions: { target: 'esnext' },
-    exclude: ['@noir-lang/noirc_abi', '@noir-lang/acvm_js'],
+    exclude: ['@noir-lang/noirc_abi', '@noir-lang/acvm_js', "@aztec/bb.js"],
   },
   plugins: [
     react(),
     nodePolyfills({
-          // You can specify which polyfills to include or exclude.
-          // For Buffer, you would ensure it's not excluded or explicitly include it.
           globals: {
-            Buffer: true, // Polyfill Buffer global
-            // You can also polyfill other globals like process, global, etc.
+            Buffer: true
           },
-          // include: ['buffer'], // Explicitly include buffer if needed
         }),
   ],
-
 })
