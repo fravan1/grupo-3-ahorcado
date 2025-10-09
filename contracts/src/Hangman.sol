@@ -5,12 +5,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IVerifier} from "./Verifier.sol";
 import "./HangmanStructs.sol";
 
-contract Hangman is Ownable{
+contract Hangman is Ownable {
     IVerifier public verifier;
-    mapping (uint256 => Game) public games;
+    mapping(uint256 => Game) public games;
     uint256 public gameCounter;
     const public MAX_WORD_LEN = 16;
-    
 
     event VerifierUpdated(IVerifier _newVerifier);
     event GameCreated(uint256 indexed gameId, address indexed player1, uint8 wordLength);
@@ -18,7 +17,6 @@ contract Hangman is Ownable{
     event GuessSubmitted(uint256 indexed gameId, address indexed guesser, bytes1 letter);
     event ProofVerified(uint256 indexed gameId, address indexed prover, bool isCorrect, uint256[] positions);
     event GameFinished(uint256 indexed gameId, address indexed winner, string reason);
-
 
     error InvalidWordLenght();
     error GameNotFound();
@@ -28,11 +26,11 @@ contract Hangman is Ownable{
     error NotPlayerInGame();
     error InvalidInput();
 
-    constructor(IVerifier _verifier)Ownable(msg.sender){
+    constructor(IVerifier _verifier) Ownable(msg.sender) {
         verifier = _verifier;
     }
 
-    function setVerifier(IVerifier _newVerifier) external onlyOwner{
+    function setVerifier(IVerifier _newVerifier) external onlyOwner {
         verifier = _newVerifier;
         emit VerifierUpdated(_newVerifier);
     }
@@ -42,8 +40,8 @@ contract Hangman is Ownable{
      * @param _wordCommitment Hash of the secret word (keccak256(abi.encodePacked(word, salt))) ??
      * @param _wordLength Length of the secret word
      */
-    function createGame(bytes32 _wordCommitment, uint8 _wordLength) external{
-        if(_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+    function createGame(bytes32 _wordCommitment, uint8 _wordLength) external {
+        if (_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
 
         uint256 gameId = gameCounter++;
         Game storage game = games[gameId];
@@ -59,7 +57,7 @@ contract Hangman is Ownable{
         game.player1State.revealedLetters = new bytes1[](_wordLength);
         game.player1State.lastActionTime = block.timestamp;
 
-        emit GameCreated(gameId,msg.sender,_wordLength);
+        emit GameCreated(gameId, msg.sender, _wordLength);
     }
 
     /**
@@ -68,13 +66,13 @@ contract Hangman is Ownable{
      * @param _wordCommitment Hash of your secret word
      * @param _wordLength Length of your secret word
      */
-    function joinGame(uint256 _gameId, bytes32 _wordCommitment, uint8 _wordLength) external{
+    function joinGame(uint256 _gameId, bytes32 _wordCommitment, uint8 _wordLength) external {
         Game storage game = games[_gameId];
 
-        if(game.player1 == address(0)) revert GameNotFound();
-        if(game.status != GameStatus.WAITING_FOR_PLAYER) revert GameAlreadyStarted();
-        if(msd.sender == game.player1) revert InvalidPlayer();
-        if(_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+        if (game.player1 == address(0)) revert GameNotFound();
+        if (game.status != GameStatus.WAITING_FOR_PLAYER) revert GameAlreadyStarted();
+        if (msd.sender == game.player1) revert InvalidPlayer();
+        if (_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
 
         game.player2 = msg.sender;
         game.status = GameStatus.ACTIVE;
@@ -84,7 +82,7 @@ contract Hangman is Ownable{
         game.player2State.revealedPositions = new bool[](_wordLength);
         game.player2State.revealedLetters = new bytes1[](_wordLength);
         game.player2State.lastActionTime = block.timestamp;
-        
+
         emit GameStarted(_gameId, game.player1, msg.sender);
     }
 
@@ -93,41 +91,41 @@ contract Hangman is Ownable{
      * @param _gameId The game ID
      * @param _letter The letter to guess (lowercase a-z)
      */
-        
-    function submitGuess(uint256 _gameId, bytes1 _letter) external{
+
+    function submitGuess(uint256 _gameId, bytes1 _letter) external {
         Game storage game = games[_gameId];
 
-        if(game.player1 == address(0)) revert GameNotFound();
-        if(game.status != GameStatus.ACTIVE) revert GameNotActive();
-        if(msg.sender != game.player1 && msg.sender != game.player2) revert NotPlayerInGame();
-        if()
+        if (game.player1 == address(0)) revert GameNotFound();
+        if (game.status != GameStatus.ACTIVE) revert GameNotActive();
+        if (msg.sender != game.player1 && msg.sender != game.player2) revert NotPlayerInGame();
+        // if()
         //que queden vidas
 
         //su ultima guess debe haber sido validada
 
         // Determine which state to update (opposite player's word)
-        PlayerState storage opponentState = msg.sender == game.player1 
+        PlayerState storage opponentState = msg.sender == game.player1
             ? game.player1State  // Player1 is guessing Player1State (their own word set by them)
             : game.player2State;
-        
+
         // Check if letter already guessed
         uint8 letterIndex = uint8(_letter) - 97; // 'a' = 97
         if (letterIndex > 25) revert InvalidInput(); // Only a-z allowed
-        
+
         uint32 mask = 1 << letterIndex;
         if (uint256(opponentState.guessedLetters) & mask != 0) revert LetterAlreadyGuessed();
-        
+
         // Check no pending guess exists
         if (opponentState.hasPendingGuess) revert PendingGuessExists();
-        
+
         // Mark letter as guessed
         opponentState.guessedLetters = bytes32(uint256(opponentState.guessedLetters) | mask);
-        
+
         // Set pending guess
         opponentState.pendingGuess = _letter;
         opponentState.hasPendingGuess = true;
         opponentState.lastActionTime = block.timestamp;
-        
+
         emit GuessSubmitted(_gameId, msg.sender, _letter);
     }
 
@@ -138,18 +136,14 @@ contract Hangman is Ownable{
      * @param _letterPositions Array indicating where the letter appears (1-indexed, 0 = not present)
      * @param _isCorrect Whether the guess was correct
      */
-    function submitProof(
-        uint256 _gameId, 
-        bytes calldata _proof,
-        uint256[] calldata _letterPositions,
-        bool _isCorrect
-    ) external{}
+    function submitProof(uint256 _gameId, bytes calldata _proof, uint256[] calldata _letterPositions, bool _isCorrect)
+        external {}
 
     /**
      * @notice Claim victory if opponent hasn't responded within timeout
      * @param _gameId The game ID
      */
-    function claimTimeout(uint256 _gameId) external{}
+    function claimTimeout(uint256 _gameId) external {}
 
     // ============================================
     // INTERNAL FUNCTIONS
@@ -169,16 +163,20 @@ contract Hangman is Ownable{
      * @notice Get the current state of a game
      * @param _gameId The game ID
      */
-    function getGameState(uint256 _gameId) external view returns (
-        address player1,
-        address player2,
-        GameStatus status,
-        address winner,
-        uint8 player1WordLength,
-        uint8 player2WordLength,
-        uint8 player1WrongGuesses,
-        uint8 player2WrongGuesses
-    ) {
+    function getGameState(uint256 _gameId)
+        external
+        view
+        returns (
+            address player1,
+            address player2,
+            GameStatus status,
+            address winner,
+            uint8 player1WordLength,
+            uint8 player2WordLength,
+            uint8 player1WrongGuesses,
+            uint8 player2WrongGuesses
+        )
+    {
         Game storage game = games[_gameId];
         return (
             game.player1,
