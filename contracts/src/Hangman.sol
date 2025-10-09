@@ -136,10 +136,55 @@ contract Hangman is Ownable {
      * @param _gameId The game ID
      * @param _proof The ZK proof from Noir circuit
      * @param _letterPositions Array indicating where the letter appears (1-indexed, 0 = not present)
-     * @param _isCorrect Whether the guess was correct
      */
-    function submitProof(uint256 _gameId, bytes calldata _proof, uint256[] calldata _letterPositions, bool _isCorrect)
-        external {}
+    function submitProof(
+        uint256 _gameId,
+        bytes calldata _proof,
+        uint256[] calldata _letterPositions
+    ) external {
+        Game storage game = games[_gameId];
+
+        if (game.player1 == address(0)) revert GameNotFound();
+        if (game.status != GameStatus.ACTIVE) revert GameNotActive();
+        if (msg.sender != game.player1 && msg.sender != game.player2) revert NotPlayerInGame();
+
+        PlayerState storage opponentState = msg.sender == game.player1
+            ? game.player2State
+            : game.player1State;
+
+        PlayerState storage myState = msg.sender == game.player1
+            ? game.player1State
+            : game.player2State;
+
+        if (opponentState.currentGuess == 0) revert NoGuessInCourse();
+
+        bytes32[] memory publicInputs = new bytes32[](2 + MAX_WORD_LEN);
+        publicInputs[0] = myState.wordCommitment;
+        publicInputs[1] = opponentState.currentGuess;
+
+        for (uint256 i = 0; i < MAX_WORD_LEN; i++)
+            publicInputs[2 + i] = bytes32(_letterPositions[i]);
+
+        bool proofIsValid = verifier.verify(_proof, publicInputs);
+
+        if (!proofIsValid) revert Cheater();
+
+        bool guessIsCorrect = false;
+        for (uint256 i = 0; i < opponentState.revealedLetters.length; i++) {
+            if (_letterPositions[i] != 0) {
+                guessIsCorrect = true;
+                opponentState.revealedLetters[i] = opponentState.currentGuess;
+            }
+        }
+
+        if (!guessIsCorrect) opponentState.remainingAttempts--;
+
+        opponentState.currentGuess = 0;
+
+        emit ProofVerified(_gameId, msg.sender, _letterPositions);
+
+        _checkGameEnd(_gameId);
+    }
 
     /**
      * @notice Claim victory if opponent hasn't responded within timeout
@@ -154,8 +199,21 @@ contract Hangman is Ownable {
      * @notice Check if the game has been won
      * @param _gameId The game ID
      */
-    function _checkWinConditions(uint256 _gameId) internal {
-        //emit GameFinished()
+    function _checkGameEnd(uint256 _gameId) internal {
+        Game storage game = games[_gameId];
+
+        // TODO: si revealedLetters no tiene 0s entonces adivinamos
+        bool player1Complete = false;
+        bool player2Complete = false;
+
+        bool player1Died = game.player1State.remainingAttempts == 0;
+        bool player2Died = game.player2State.remainingAttempts == 0;
+
+        // game ended
+        if ((player1Complete || player1Died) && (player2Complete || player2Died)) {
+
+            // emit GameFinished(_gameId, winner, reason);
+        }
     }
 
     // ============================================
