@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aztec/bb.js": "^2.0.3",
-    "@noir-lang/noir_js": "1.0.0-beta.11",
+    "@aztec/bb.js": "0.87.0",
+    "@noir-lang/noir_js": "1.0.0-beta.9",
     "@tanstack/react-query": "^5.90.2",
     "@zkpassport/poseidon2": "^0.6.2",
     "poseidon-lite": "^0.3.0",
