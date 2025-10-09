@@ -9,8 +9,8 @@ contract Hangman is Ownable {
     IVerifier public verifier;
     mapping(uint256 => Game) public games;
     uint256 public gameCounter;
-    uint8 constant public MAX_WORD_LEN = 16;
-    uint8 constant public DEFAULT_MAX_WRONG_GUESSES = 6;
+    uint8 public constant MAX_WORD_LEN = 16;
+    uint8 public constant DEFAULT_MAX_WRONG_GUESSES = 6;
 
     event VerifierUpdated(IVerifier _newVerifier);
     event GameCreated(uint256 indexed gameId, address indexed player1, uint8 wordLength);
@@ -162,8 +162,9 @@ contract Hangman is Ownable {
         publicInputs[0] = myState.wordCommitment;
         publicInputs[1] = opponentState.currentGuess;
 
-        for (uint256 i = 0; i < MAX_WORD_LEN; i++)
+        for (uint256 i = 0; i < MAX_WORD_LEN; i++) {
             publicInputs[2 + i] = bytes32(_letterPositions[i]);
+        }
 
         bool proofIsValid = verifier.verify(_proof, publicInputs);
 
