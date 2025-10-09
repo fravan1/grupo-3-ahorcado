@@ -1,0 +1,8 @@
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry
+    ports:
+      - '8545:8545'
+    entrypoint: ''
+    command: ['anvil', '--port', '8545', '--host', '0.0.0.0', '--code-size-limit', '650000', '--state', 'state.json']
+
