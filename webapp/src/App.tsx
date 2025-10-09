@@ -3,6 +3,7 @@ import './App.css'
 import { useAccount } from 'wagmi'
 import { Account } from './components/account-info'
 import { WalletOptions } from './components/wallet-options'
+import { useZk } from './hooks/useZk'
 
 function ConnectWallet() {
   const { isConnected } = useAccount()
@@ -12,6 +13,7 @@ function ConnectWallet() {
 
 function App() {
   const [count, setCount] = useState(0);
+  const zk = useZk();
 
   return (
     <>
@@ -26,10 +28,13 @@ function App() {
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR {import.meta.env.VITE_VERIFIER_ADDRESS}
         </p>
+        <pre>
+        </pre>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <button onClick={zk.calculateWitness} >WITNESS</button>
     </>
   )
 }
