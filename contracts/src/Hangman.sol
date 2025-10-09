@@ -9,6 +9,8 @@ contract Hangman is Ownable{
     IVerifier public verifier;
     mapping (uint256 => Game) public games;
     uint256 public gameCounter;
+    const public MAX_WORD_LEN = 16;
+    
 
     event VerifierUpdated(IVerifier _newVerifier);
     event GameCreated(uint256 indexed gameId, address indexed player1, uint8 wordLength);
@@ -16,6 +18,15 @@ contract Hangman is Ownable{
     event GuessSubmitted(uint256 indexed gameId, address indexed guesser, bytes1 letter);
     event ProofVerified(uint256 indexed gameId, address indexed prover, bool isCorrect, uint256[] positions);
     event GameFinished(uint256 indexed gameId, address indexed winner, string reason);
+
+
+    error InvalidWordLenght();
+    error GameNotFound();
+    error GameAlreadyStarted();
+    error InvalidPlayer();
+    error GameNotActive();
+    error NotPlayerInGame();
+    error InvalidInput();
 
     constructor(IVerifier _verifier)Ownable(msg.sender){
         verifier = _verifier;
@@ -32,7 +43,21 @@ contract Hangman is Ownable{
      * @param _wordLength Length of the secret word
      */
     function createGame(bytes32 _wordCommitment, uint8 _wordLength) external{
+        if(_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+
         uint256 gameId = gameCounter++;
+        Game storage game = games[gameId];
+
+        game.player1 = msg.sender;
+        game.status = GameStatus.WAITING_FOR_PLAYER;
+        game.maxWrongGuesses = DEFAULT_MAX_WRONG_GUESSES;
+        game.createdAt = block.timestamp;
+
+        game.player1State.wordCommitment = _wordCommitment;
+        game.player1State.wordLength = _wordLength;
+        game.player1State.revealedPositions = new bool[](_wordLength);
+        game.player1State.revealedLetters = new bytes1[](_wordLength);
+        game.player1State.lastActionTime = block.timestamp;
 
         emit GameCreated(gameId,msg.sender,_wordLength);
     }
@@ -43,14 +68,68 @@ contract Hangman is Ownable{
      * @param _wordCommitment Hash of your secret word
      * @param _wordLength Length of your secret word
      */
-    function joinGame(uint256 _gameId, bytes32 _wordCommitment, uint8 _wordLength) external{}
+    function joinGame(uint256 _gameId, bytes32 _wordCommitment, uint8 _wordLength) external{
+        Game storage game = games[_gameId];
+
+        if(game.player1 == address(0)) revert GameNotFound();
+        if(game.status != GameStatus.WAITING_FOR_PLAYER) revert GameAlreadyStarted();
+        if(msd.sender == game.player1) revert InvalidPlayer();
+        if(_wordCommitment == 0 || _wordLength > MAX_WORD_LEN) revert InvalidWordLenght();
+
+        game.player2 = msg.sender;
+        game.status = GameStatus.ACTIVE;
+
+        game.player2State.wordCommitment = _wordCommitment;
+        game.player2State.wordLength = _wordLength;
+        game.player2State.revealedPositions = new bool[](_wordLength);
+        game.player2State.revealedLetters = new bytes1[](_wordLength);
+        game.player2State.lastActionTime = block.timestamp;
+        
+        emit GameStarted(_gameId, game.player1, msg.sender);
+    }
 
     /**
      * @notice Submit a letter guess for your opponent's word
      * @param _gameId The game ID
      * @param _letter The letter to guess (lowercase a-z)
      */
-    function submitGuess(uint256 _gameId, bytes1 _letter) external{}
+        
+    function submitGuess(uint256 _gameId, bytes1 _letter) external{
+        Game storage game = games[_gameId];
+
+        if(game.player1 == address(0)) revert GameNotFound();
+        if(game.status != GameStatus.ACTIVE) revert GameNotActive();
+        if(msg.sender != game.player1 && msg.sender != game.player2) revert NotPlayerInGame();
+        if()
+        //que queden vidas
+
+        //su ultima guess debe haber sido validada
+
+        // Determine which state to update (opposite player's word)
+        PlayerState storage opponentState = msg.sender == game.player1 
+            ? game.player1State  // Player1 is guessing Player1State (their own word set by them)
+            : game.player2State;
+        
+        // Check if letter already guessed
+        uint8 letterIndex = uint8(_letter) - 97; // 'a' = 97
+        if (letterIndex > 25) revert InvalidInput(); // Only a-z allowed
+        
+        uint32 mask = 1 << letterIndex;
+        if (uint256(opponentState.guessedLetters) & mask != 0) revert LetterAlreadyGuessed();
+        
+        // Check no pending guess exists
+        if (opponentState.hasPendingGuess) revert PendingGuessExists();
+        
+        // Mark letter as guessed
+        opponentState.guessedLetters = bytes32(uint256(opponentState.guessedLetters) | mask);
+        
+        // Set pending guess
+        opponentState.pendingGuess = _letter;
+        opponentState.hasPendingGuess = true;
+        opponentState.lastActionTime = block.timestamp;
+        
+        emit GuessSubmitted(_gameId, msg.sender, _letter);
+    }
 
     /**
      * @notice Submit a zero-knowledge proof for an opponent's guess
