@@ -84,7 +84,7 @@ contract Hangman is Ownable {
 
         game.player2State.wordCommitment = _wordCommitment;
         game.player2State.wordLength = _wordLength;
-        game.player2State.remainingAttempts = DEFAULT_MAX_WRONG_GUESSES;
+        game.player2State.remainingAttempts = DEFAULT_ATTEMPTS;
         game.player2State.revealedLetters = new bytes1[](_wordLength);
         game.player2State.lastActionTime = block.timestamp;
 
@@ -214,7 +214,7 @@ contract Hangman is Ownable {
             game.status = GameStatus.FINISHED;
 
             address winner;
-            string memory reason
+            string memory reason;
 
             if (player1Died && player2Died) { // tie
                 winner = address(0);
@@ -242,7 +242,7 @@ contract Hangman is Ownable {
         }
     }
 
-    function _isWordComplete(bytes memory revealedLetters) internal returns(bool){
+    function _isWordComplete(bytes1[] storage revealedLetters) internal view returns(bool){
         for (uint256 i = 0; i < revealedLetters.length; i++) {
             if (revealedLetters[i] == 0)
                 return false;
