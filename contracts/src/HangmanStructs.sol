@@ -2,14 +2,16 @@
 pragma solidity ^0.8.13;
 
 struct PlayerState {
+    uint8 remainingAttempts;
+
     bytes32 wordCommitment; // My secret word (for opponent to guess)
     uint8 wordLength;
 
     bytes1[] revealedLetters; // Letters I have guessed correctly
     uint32 guessedLetters; // Bitmap of letters I have guessed
 
-    uint8 remainingAttempts;
     bytes1 currentGuess; // My current guess waiting for proof (or 0)
+
     uint256 lastActionTime;
 }
 

@@ -10,7 +10,7 @@ contract Hangman is Ownable {
     mapping(uint256 => Game) public games;
     uint256 public gameCounter;
     uint8 public constant MAX_WORD_LEN = 16;
-    uint8 public constant DEFAULT_MAX_WRONG_GUESSES = 6;
+    uint8 public constant DEFAULT_ATTEMPTS = 6;
 
     event VerifierUpdated(IVerifier _newVerifier);
     event GameCreated(uint256 indexed gameId, address indexed player1, uint8 wordLength);
@@ -58,7 +58,7 @@ contract Hangman is Ownable {
 
         game.player1State.wordCommitment = _wordCommitment;
         game.player1State.wordLength = _wordLength;
-        game.player1State.remainingAttempts = DEFAULT_MAX_WRONG_GUESSES;
+        game.player1State.remainingAttempts = DEFAULT_ATTEMPTS;
         game.player1State.revealedLetters = new bytes1[](_wordLength);
         game.player1State.lastActionTime = block.timestamp;
 
@@ -203,18 +203,51 @@ contract Hangman is Ownable {
     function _checkGameEnd(uint256 _gameId) internal {
         Game storage game = games[_gameId];
 
-        // TODO: si revealedLetters no tiene 0s entonces adivinamos
-        bool player1Complete = false;
-        bool player2Complete = false;
+        bool player1Guessed = _isWordComplete(game.player1State.revealedLetters);
+        bool player2Guessed = _isWordComplete(game.player2State.revealedLetters);
 
         bool player1Died = game.player1State.remainingAttempts == 0;
         bool player2Died = game.player2State.remainingAttempts == 0;
 
         // game ended
-        if ((player1Complete || player1Died) && (player2Complete || player2Died)) {
+        if ((player1Guessed || player1Died) && (player2Guessed || player2Died)) {
+            game.status = GameStatus.FINISHED;
 
-            // emit GameFinished(_gameId, winner, reason);
+            address winner;
+            string memory reason
+
+            if (player1Died && player2Died) { // tie
+                winner = address(0);
+                reason = "Both players lost";
+            } else if (player1Died) { // player 2 guessed
+                winner = game.player2;
+                reason = "Player 2 was the only one who guessed";
+            } else if (player2Died) { // player 1 guessed
+                winner = game.player1;
+                reason = "Player 1 was the only one who guessed";
+            } else { // both guessed
+                if (game.player1State.remainingAttempts == game.player2State.remainingAttempts) {
+                    winner = address(0);
+                    reason = "Both players guessed at the same time";
+                } else if (game.player1State.remainingAttempts < game.player2State.remainingAttempts) {
+                    winner = game.player1;
+                    reason = "Player 1 guessed faster than player 2";
+                } else {
+                    winner = game.player2;
+                    reason = "Player 2 guessed faster than player 1";
+                }
+            }
+
+            emit GameFinished(_gameId, winner, reason);
         }
+    }
+
+    function _isWordComplete(bytes memory revealedLetters) internal returns(bool){
+        for (uint256 i = 0; i < revealedLetters.length; i++) {
+            if (revealedLetters[i] == 0)
+                return false;
+        }
+        return true;
     }
 
     // ============================================
