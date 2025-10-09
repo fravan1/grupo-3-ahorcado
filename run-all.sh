@@ -2,7 +2,10 @@
 
 set -e
 
-HERE=$(dirname "$(realpath "$0")")
+HERE=$(dirname "$(realpath "$0")");
+
+docker compose down;
+docker compose up -d;
 
 (
     cd $HERE/noir_circuits &&
