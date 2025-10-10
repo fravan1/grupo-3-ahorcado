@@ -500,6 +500,7 @@ contract HangmanTest is Test {
         assertEq(winner, address(0));
     }
 
+    //TODO: revisar las winning conditions 
     function test_GameEnd_Player2Wins_MoreLives() public {
         _setupActiveGame();
 

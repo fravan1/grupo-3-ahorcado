@@ -167,7 +167,11 @@ contract Hangman is Ownable {
 
         if (opponentState.currentGuess == 0) revert NoGuessInCourse();
 
-        uint256 lastPosition = 0;
+        //TODO: agregar validacion para que _letterPositions tenga el largo esperado
+        //revertir con otro error
+        //el ciclo se va de range antes de poder checkear el if y explota
+        
+        //uint256 lastPosition = 0;
         for (uint256 i = myState.wordLength; i < _letterPositions.length; i++)
             if (_letterPositions[i] != 0) revert InvalidInput();
 
