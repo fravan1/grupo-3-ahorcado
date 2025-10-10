@@ -47,7 +47,8 @@ export function useZk() {
 
     return {
       proof,
-      commitment
+      commitment,
+      positions
     };
   }
 

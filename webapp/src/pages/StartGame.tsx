@@ -1,11 +1,15 @@
 import {  useCallback, useEffect } from "react";
 import { useHangman } from "../hooks/useHangman"
+import { useZk } from "../hooks/useZk";
 
 export function StartGame() {
   const { startGame } = useHangman();
+  const { calculateCommitment } = useZk();
   
   const onClick = useCallback(async () => {
-    await startGame.call(10n);
+    const {commitment} = calculateCommitment('hola');
+    
+    await startGame.call(commitment);
   }, [startGame.call]);
 
   console.log(startGame.waiting);
