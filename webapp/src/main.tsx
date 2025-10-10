@@ -6,6 +6,8 @@ import { WagmiProvider } from 'wagmi'
 import { BrowserRouter, Route, Routes } from "react-router";
 import { config } from './wagmi.ts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MainLayout } from './MainLayout.tsx'
+import { StartGame } from './pages/StartGame.tsx'
 
 const queryClient = new QueryClient();
 
@@ -15,7 +17,10 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<App />} />
+            <Route element={<MainLayout />}>
+              <Route index  element={<App />} />
+              <Route path="new" element={<StartGame/>} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>

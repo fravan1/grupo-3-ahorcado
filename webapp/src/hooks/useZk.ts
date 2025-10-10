@@ -9,15 +9,9 @@ const backend = new UltraHonkBackend(hangmanCircuit.bytecode);
 
 export function useZk() {
   
-  
-
-  const calculateProof = async (word: string, guess: string) => {
+  const calculateCommitment = (word: string) => {
     if (word.length > 16) {
       throw new Error('Words longer than 16 characters do not exist in this realm');
-    }
-
-    if (guess.length !== 1) {
-      throw new Error('Exactly 1 letter at the time should be guessed');
     }
 
     const chars = word.split('').map(char => char.charCodeAt(0));
@@ -25,11 +19,22 @@ export function useZk() {
     while (chars.length < 16) {
       chars.push(0);
     }
-    const guessCode = guess.charCodeAt(0);
-
-    const positions = chars.map(c => c === guessCode);
 
     const commitment = poseidon2Hash(chars.map(c => BigInt(c)));
+    return {
+      commitment,
+      chars
+    };
+  }
+
+  const calculateProof = async (word: string, guess: string) => {
+    if (guess.length !== 1) {
+      throw new Error('Exactly 1 letter at the time should be guessed');
+    }
+
+    const guessCode = guess.charCodeAt(0);
+    const {commitment, chars} = calculateCommitment(word);
+    const positions = chars.map(c => c === guessCode);
 
     const wtns = await noir.execute({
       word: chars.map(c => c.toString()),
