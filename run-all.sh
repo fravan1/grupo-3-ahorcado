@@ -15,4 +15,8 @@ docker compose up -d;
     cd $HERE/contracts &&
     bash $HERE/contracts/run-deploy.sh
 )
+(
+    cd $HERE/contracts &&
+    bash $HERE/contracts/send-abi.sh
+)
 (cd $HERE/webapp && yarn dev)
