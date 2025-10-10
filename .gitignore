@@ -3,3 +3,6 @@ lib
 
 noir_circuits/target
 webapp/.env
+
+# ide's
+.idea
