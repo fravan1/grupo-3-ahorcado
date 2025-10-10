@@ -139,6 +139,10 @@ contract Hangman is Ownable {
         emit GuessSubmitted(_gameId, msg.sender, _letter);
     }
 
+    function testVerify(bytes calldata proof, bytes32[] calldata publicInputs) public returns (bool) {
+      return verifier.verify(proof, publicInputs);
+    }
+
     /**
      * @notice Submit a zero-knowledge proof for an opponent's guess
      * @param _gameId The game ID
