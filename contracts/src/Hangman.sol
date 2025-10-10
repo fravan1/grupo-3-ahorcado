@@ -226,32 +226,32 @@ contract Hangman is Ownable {
         if ((player1Guessed || player1Died) && (player2Guessed || player2Died)) {
             game.status = GameStatus.FINISHED;
 
-            address winner;
+            //address winner;
             string memory reason;
 
             if (player1Died && player2Died) { // tie
-                winner = address(0);
+                //winner = address(0);
                 reason = "Both players lost";
             } else if (player1Died) { // player 2 guessed
-                winner = game.player2;
+                game.winner = game.player2;
                 reason = "Player 2 was the only one who guessed";
             } else if (player2Died) { // player 1 guessed
-                winner = game.player1;
+                game.winner = game.player1;
                 reason = "Player 1 was the only one who guessed";
             } else { // both guessed
                 if (game.player1State.remainingAttempts == game.player2State.remainingAttempts) {
-                    winner = address(0);
+                    //winner = address(0);
                     reason = "Both players guessed at the same time";
                 } else if (game.player1State.remainingAttempts < game.player2State.remainingAttempts) {
-                    winner = game.player1;
+                    game.winner = game.player1;
                     reason = "Player 1 guessed faster than player 2";
                 } else {
-                    winner = game.player2;
+                    game.winner = game.player2;
                     reason = "Player 2 guessed faster than player 1";
                 }
             }
 
-            emit GameFinished(_gameId, winner, reason);
+            emit GameFinished(_gameId, game.winner, reason);
         }
     }
 
