@@ -52,6 +52,7 @@ export function useZk() {
   }
 
   return {
+    calculateCommitment,
     calculateProof
   }
 }

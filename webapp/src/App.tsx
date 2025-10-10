@@ -17,9 +17,8 @@ function SwitchChainButton() {
   const { chains, switchChain } = useSwitchChain();
   const chainId = useChainId();
 
-  if (anvil.id === chainId) {
-    return <div>Estás en la red correcta.</div>
-  }
+  console.log('chainId', chainId);
+  console.log('anvil.id', anvil.id);
 
   const chain = chains.find(chain => chain.id === anvil.id);
 

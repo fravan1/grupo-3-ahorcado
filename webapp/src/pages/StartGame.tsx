@@ -1,17 +1,18 @@
-import { useCallback } from "react";
+import {  useCallback, useEffect } from "react";
 import { useHangman } from "../hooks/useHangman"
 
 export function StartGame() {
   const { startGame } = useHangman();
-  console.log(startGame);
-
-  const onClick = useCallback(() => {
-    startGame.call(10n);
+  
+  const onClick = useCallback(async () => {
+    await startGame.call(10n);
   }, [startGame.call]);
+
+  console.log(startGame.waiting);
 
   return <div>
     <div>
-      {startGame.waiting ? 'waiting...' : startGame.res}
+      {!startGame.ready ? 'waiting...' : startGame.res?.gameId}
     </div>
     <button onClick={onClick}>
       Nuevo juego
