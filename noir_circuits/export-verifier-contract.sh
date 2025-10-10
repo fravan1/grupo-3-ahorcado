@@ -9,7 +9,7 @@ CIRCUIT_NAME=hangman
 
 nargo test
 
-rm -r $TARGET_DIR
+rm -rf $TARGET_DIR
 
 nargo build
 bb write_vk -b $TARGET_DIR/$CIRCUIT_NAME.json -o $TARGET_DIR

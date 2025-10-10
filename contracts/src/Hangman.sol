@@ -43,7 +43,7 @@ contract Hangman is Ownable {
 
     /**
      * @notice Create a new game with a secret word
-     * @param _wordCommitment Hash of the secret word (keccak256(abi.encodePacked(word, salt))) ??
+     * @param _wordCommitment Poseidon hash of the secret word
      * @param _wordLength Length of the secret word
      */
     function createGame(bytes32 _wordCommitment, uint8 _wordLength) external {
@@ -117,10 +117,9 @@ contract Hangman is Ownable {
 
         if (myState.remainingAttempts == 0) revert DeadPlayer();
 
-        // Validate letter
+        // Validate letter (Only a-z allowed)
         uint8 letterIndex = uint8(_letter);
-        if (letterIndex < 97 || 122 < letterIndex)
-            revert InvalidInput(); // Only a-z allowed
+        if (letterIndex < 97 || 122 < letterIndex) revert InvalidInput();
         letterIndex -= 97; // 'a' = 97
 
         // Check if letter already guessed
@@ -144,7 +143,7 @@ contract Hangman is Ownable {
      * @notice Submit a zero-knowledge proof for an opponent's guess
      * @param _gameId The game ID
      * @param _proof The ZK proof from Noir circuit
-     * @param _letterPositions Array indicating where the letter appears (1-indexed, 0 = not present)
+     * @param _letterPositions (0/1) Array indicating where the letter appears
      */
     function submitProof(
         uint256 _gameId,
@@ -170,10 +169,11 @@ contract Hangman is Ownable {
         //TODO: agregar validacion para que _letterPositions tenga el largo esperado
         //revertir con otro error
         //el ciclo se va de range antes de poder checkear el if y explota
-        
+
         //uint256 lastPosition = 0;
-        for (uint256 i = myState.wordLength; i < _letterPositions.length; i++)
+        for (uint256 i = myState.wordLength; i < _letterPositions.length; i++) {
             if (_letterPositions[i] != 0) revert InvalidInput();
+        }
 
         bytes32[] memory publicInputs = new bytes32[](2 + MAX_WORD_LEN);
         publicInputs[0] = myState.wordCommitment;
@@ -259,10 +259,9 @@ contract Hangman is Ownable {
         }
     }
 
-    function _isWordComplete(bytes1[] storage revealedLetters) internal view returns(bool){
+    function _isWordComplete(bytes1[] storage revealedLetters) internal view returns (bool) {
         for (uint256 i = 0; i < revealedLetters.length; i++) {
-            if (revealedLetters[i] == 0)
-                return false;
+            if (revealedLetters[i] == 0) return false;
         }
         return true;
     }
